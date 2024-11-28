@@ -10,20 +10,22 @@ export class AuthenticationController {
     constructor(private service: AuthenticationService) {}
 
     @Post('signup')
-    SignUp(@Body() body: CreateAccountDTO) {
+    async SignUp(@Body() body: CreateAccountDTO) {
 
         this.logger.log('Sign Up Request');
 
+        const result = await this.service.SignUp(body);
 
-
-        return { message: 'Login successful' };
+        return {statusCode: 201, data: result, message: 'OK' };
     }
 
     @Post('login')
-    Login(@Body() body: LoginDTO) {
+    async Login(@Body() body: LoginDTO) {
 
-        this.logger.log({ message: 'Login successful', body });
+        this.logger.log('Login Request');
 
-        return { message: 'Login successful' };
+        const result = await this.service.Login(body);
+
+        return { statusCode: 200, data: result, message: 'OK' };
     }
 }

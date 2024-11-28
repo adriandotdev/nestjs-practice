@@ -1,14 +1,52 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { AuthenticationRepository } from './authentication.repository';
-import { CreateAccountDTO} from './authDTOs';
+import { CreateAccountDTO, LoginDTO} from './authDTOs';
+import * as bcryptjs from 'bcryptjs'
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthenticationService {
 
-    constructor(private repository: AuthenticationRepository) {}
+    constructor(
+        private repository: AuthenticationRepository, 
+        private jwtService: JwtService
+    ) {}
 
-    SignUp(data: CreateAccountDTO) {
+    async SignUp(data: CreateAccountDTO) {
 
-        return data;
+        const hashedPassword = await bcryptjs.hash(data.password, 10);
+
+        const user = await this.repository.SaveUser({...data, password: hashedPassword});
+
+        await this.repository.SaveUserDetail(data, user.insertId);
+
+        return {
+            id: user.insertId, 
+            given_name: data.given_name, 
+            last_name: data.last_name, 
+            date_of_birth: data.date_of_birth, 
+            username: data.username
+        };
+    }
+
+    async Login(data: LoginDTO) {
+
+        const user = await this.repository.FindOneByUsername(data.username);
+
+        if (!user) {
+            throw new HttpException("Invalid credentials", HttpStatus.BAD_REQUEST);
+        }
+
+        const isMatch = await bcryptjs.compare(data.password, user.password);
+
+        if (!isMatch) {
+            throw new HttpException("Invalid credentials", HttpStatus.BAD_REQUEST);
+        }
+
+        const access_token = await this.jwtService.signAsync({sub: user.username, username: user.username})
+
+        return {
+            access_token
+        }
     }
 }

@@ -4,28 +4,25 @@ import { AuthenticationService } from './authentication.service';
 
 @Controller('api/auth/v1')
 export class AuthenticationController {
+  private logger = new Logger(AuthenticationController.name);
 
-    private logger = new Logger(AuthenticationController.name);
+  constructor(private service: AuthenticationService) {}
 
-    constructor(private service: AuthenticationService) {}
+  @Post('signup')
+  async SignUp(@Body() body: CreateAccountDTO) {
+    this.logger.log('Sign Up Request');
 
-    @Post('signup')
-    async SignUp(@Body() body: CreateAccountDTO) {
+    const result = await this.service.SignUp(body);
 
-        this.logger.log('Sign Up Request');
+    return { statusCode: 201, data: result, message: 'OK' };
+  }
 
-        const result = await this.service.SignUp(body);
+  @Post('login')
+  async Login(@Body() body: LoginDTO) {
+    this.logger.log('Login Request');
 
-        return {statusCode: 201, data: result, message: 'OK' };
-    }
+    const result = await this.service.Login(body);
 
-    @Post('login')
-    async Login(@Body() body: LoginDTO) {
-
-        this.logger.log('Login Request');
-
-        const result = await this.service.Login(body);
-
-        return { statusCode: 200, data: result, message: 'OK' };
-    }
+    return { statusCode: 200, data: result, message: 'OK' };
+  }
 }

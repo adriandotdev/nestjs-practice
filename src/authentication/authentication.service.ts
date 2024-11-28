@@ -1,52 +1,55 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { AuthenticationRepository } from './authentication.repository';
-import { CreateAccountDTO, LoginDTO} from './authDTOs';
-import * as bcryptjs from 'bcryptjs'
+import { CreateAccountDTO, LoginDTO } from './authDTOs';
+import * as bcryptjs from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthenticationService {
+  constructor(
+    private repository: AuthenticationRepository,
+    private jwtService: JwtService,
+  ) {}
 
-    constructor(
-        private repository: AuthenticationRepository, 
-        private jwtService: JwtService
-    ) {}
+  async SignUp(data: CreateAccountDTO) {
+    const hashedPassword = await bcryptjs.hash(data.password, 10);
 
-    async SignUp(data: CreateAccountDTO) {
+    const user = await this.repository.SaveUser({
+      ...data,
+      password: hashedPassword,
+    });
 
-        const hashedPassword = await bcryptjs.hash(data.password, 10);
+    await this.repository.SaveUserDetail(data, user.insertId);
 
-        const user = await this.repository.SaveUser({...data, password: hashedPassword});
+    return {
+      id: user.insertId,
+      given_name: data.given_name,
+      last_name: data.last_name,
+      date_of_birth: data.date_of_birth,
+      username: data.username,
+    };
+  }
 
-        await this.repository.SaveUserDetail(data, user.insertId);
+  async Login(data: LoginDTO) {
+    const user = await this.repository.FindOneByUsername(data.username);
 
-        return {
-            id: user.insertId, 
-            given_name: data.given_name, 
-            last_name: data.last_name, 
-            date_of_birth: data.date_of_birth, 
-            username: data.username
-        };
+    if (!user) {
+      throw new HttpException('Invalid credentials', HttpStatus.BAD_REQUEST);
     }
 
-    async Login(data: LoginDTO) {
+    const isMatch = await bcryptjs.compare(data.password, user.password);
 
-        const user = await this.repository.FindOneByUsername(data.username);
-
-        if (!user) {
-            throw new HttpException("Invalid credentials", HttpStatus.BAD_REQUEST);
-        }
-
-        const isMatch = await bcryptjs.compare(data.password, user.password);
-
-        if (!isMatch) {
-            throw new HttpException("Invalid credentials", HttpStatus.BAD_REQUEST);
-        }
-
-        const access_token = await this.jwtService.signAsync({sub: user.username, username: user.username})
-
-        return {
-            access_token
-        }
+    if (!isMatch) {
+      throw new HttpException('Invalid credentials', HttpStatus.BAD_REQUEST);
     }
+
+    const access_token = await this.jwtService.signAsync({
+      sub: user.username,
+      username: user.username,
+    });
+
+    return {
+      access_token,
+    };
+  }
 }

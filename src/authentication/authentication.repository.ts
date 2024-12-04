@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CreateAccountDTO, UserDTO } from './authDTOs';
 import pool from 'src/config/mysql';
 import { QueryResult, ResultSetHeader } from 'mysql2';
@@ -15,7 +15,10 @@ export class AuthenticationRepository {
         QUERY,
         [data.username, data.password],
         (err, result: ResultSetHeader) => {
-          if (err) reject(err);
+          if (err)
+            reject(
+              new InternalServerErrorException(err, { cause: err.message }),
+            );
 
           resolve(result);
         },
@@ -33,7 +36,10 @@ export class AuthenticationRepository {
         QUERY,
         [id, data.given_name, data.last_name, data.date_of_birth],
         (err, result) => {
-          if (err) reject(err);
+          if (err)
+            reject(
+              new InternalServerErrorException(err, { cause: err.message }),
+            );
 
           resolve(result);
         },
@@ -48,7 +54,8 @@ export class AuthenticationRepository {
             `;
 
       pool.query(QUERY, [username], (err, result: QueryResult) => {
-        if (err) reject(err);
+        if (err)
+          reject(new InternalServerErrorException(err, { cause: err.message }));
 
         resolve(result[0]);
       });

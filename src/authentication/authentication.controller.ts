@@ -1,7 +1,9 @@
-import { Body, Controller, Post, Logger } from '@nestjs/common';
+import { Body, Controller, Post, Logger, UseFilters } from '@nestjs/common';
 import { CreateAccountDTO, LoginDTO } from './authDTOs';
 import { AuthenticationService } from './authentication.service';
+import { HttpExceptionFilter } from 'src/filters/httpexception.filter';
 
+@UseFilters(new HttpExceptionFilter())
 @Controller('api/auth/v1')
 export class AuthenticationController {
   private logger = new Logger(AuthenticationController.name);

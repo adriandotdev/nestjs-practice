@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { AuthenticationRepository } from './authentication.repository';
 import { CreateAccountDTO, LoginDTO } from './authDTOs';
 import * as bcryptjs from 'bcryptjs';
@@ -34,13 +34,19 @@ export class AuthenticationService {
     const user = await this.repository.FindOneByUsername(data.username);
 
     if (!user) {
-      throw new HttpException('Invalid credentials', HttpStatus.BAD_REQUEST);
+      throw new BadRequestException('Bad Request', {
+        cause: 'User not found',
+        description: 'User not found',
+      });
     }
 
     const isMatch = await bcryptjs.compare(data.password, user.password);
 
     if (!isMatch) {
-      throw new HttpException('Invalid credentials', HttpStatus.BAD_REQUEST);
+      throw new BadRequestException('Bad Request', {
+        cause: 'Password mismatch',
+        description: 'Password mismatch',
+      });
     }
 
     const access_token = await this.jwtService.signAsync({
